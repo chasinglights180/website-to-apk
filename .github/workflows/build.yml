@@ -17,10 +17,8 @@ jobs:
 
       - name: Prepare Offline Files
         run: |
-          # Creates the secret folder inside the app where HTML lives
           mkdir -p app/src/main/assets
           cp index.html app/src/main/assets/
-          echo "HTML file moved to assets successfully"
 
       - name: Run Build Script
         run: |
@@ -30,5 +28,5 @@ jobs:
       - name: Upload Final APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mamlu-Offline-App
+          name: Mamlu-App
           path: ./*.apk
