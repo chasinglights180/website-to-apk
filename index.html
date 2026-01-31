@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mamlu - Midnight Notes</title>
+    <style>
+        :root {
+            --bg: #0b0e14;
+            --card: #161b22;
+            --text: #e6edf3;
+            --accent: #58a6ff;
+            --border: #30363d;
+            --moon-color: rgba(255, 255, 255, 0.05);
+        }
+
+        [data-theme="light"] {
+            --bg: #f6f8fa;
+            --card: #ffffff;
+            --text: #1f2328;
+            --accent: #0969da;
+            --border: #d0d7de;
+            --moon-color: rgba(0, 0, 0, 0.03);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg); color: var(--text);
+            transition: background 0.3s ease; overflow-x: hidden;
+        }
+
+        /* Moon Sign Background */
+        .moon-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; pointer-events: none; font-size: 5rem;
+            display: flex; flex-wrap: wrap; justify-content: space-around;
+            align-content: space-around; color: var(--moon-color);
+        }
+
+        header {
+            padding: 20px; sticky; top: 0; background: var(--bg); z-index: 10;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        h1 { margin: 0; font-size: 1.5rem; letter-spacing: 1px; }
+
+        .search-container { position: relative; width: 100%; }
+        input#search {
+            width: 100%; padding: 12px 15px; border-radius: 10px;
+            border: 1px solid var(--border); background: var(--card);
+            color: var(--text); outline: none; font-size: 1rem;
+        }
+
+        .controls { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        
+        /* The Note Box */
+        .note-input-container {
+            background: var(--card); border-radius: 15px; padding: 15px;
+            border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        textarea {
+            width: 100%; height: 100px; background: transparent; border: none;
+            color: var(--text); resize: none; font-size: 1rem; outline: none;
+        }
+        .limit-row {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.8rem; color: #8b949e; margin-top: 10px;
+        }
+
+        button.add-btn {
+            background: var(--accent); color: white; border: none;
+            padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer;
+        }
+
+        /* Settings Sliders */
+        .settings { display: flex; gap: 20px; align-items: center; font-size: 0.9rem; }
+        .slider-box { display: flex; align-items: center; gap: 8px; }
+        input[type="range"] { width: 60px; accent-color: var(--accent); }
+
+        /* Notes List */
+        #notes-list { padding: 0 20px 100px 20px; display: flex; flex-direction: column; gap: 12px; }
+        .note-card {
+            background: var(--card); padding: 15px; border-radius: 12px;
+            border-left: 4px solid var(--accent); animation: slideIn 0.3s ease;
+            position: relative;
+        }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .delete-btn {
+            position: absolute; right: 10px; top: 10px; background: none;
+            border: none; color: #f85149; font-size: 1.2rem; cursor: pointer;
+        }
+
+        .timestamp { font-size: 0.7rem; color: #8b949e; margin-top: 8px; display: block; }
+    </style>
+</head>
+<body data-theme="dark">
+
+<div class="moon-bg">
+    <span>🌙</span><span>🌑</span><span>🌒</span><span>🌓</span>
+    <span>🌔</span><span>🌕</span><span>🌖</span><span>🌗</span>
+    <span>🌘</span><span>🌙</span><span>🌑</span><span>🌒</span>
+</div>
+
+<header>
+    <div class="header-top">
+        <h1>MAMLU</h1>
+        <div class="settings">
+            <div class="slider-box">
+                <span>🔔</span>
+                <input type="range" id="notif-slider" min="0" max="100" value="80">
+            </div>
+            <button onclick="toggleTheme()" id="theme-icon" style="background:none; border:none; font-size:1.2rem; cursor:pointer;">🌞</button>
+        </div>
+    </div>
+    <div class="search-container">
+        <input type="text" id="search" placeholder="Search your thoughts..." oninput="filterNotes()">
+    </div>
+</header>
+
+<div class="controls">
+    <div class="note-input-container">
+        <textarea id="note-text" placeholder="What's on your mind?" maxlength="400" oninput="updateCount()"></textarea>
+        <div class="limit-row">
+            <span id="char-count">0 / 400</span>
+            <button class="add-btn" onclick="addNote()">Save Moon Note</button>
+        </div>
+    </div>
+</div>
+
+<div id="notes-list"></div>
+
+<script>
+    let notes = JSON.parse(localStorage.getItem('mamlu_notes')) || [];
+
+    function updateCount() {
+        const text = document.getElementById('note-text').value;
+        document.getElementById('char-count').innerText = `${text.length} / 400`;
+    }
+
+    function toggleTheme() {
+        const body = document.body;
+        const icon = document.getElementById('theme-icon');
+        if (body.getAttribute('data-theme') === 'dark') {
+            body.setAttribute('data-theme', 'light');
+            icon.innerText = '🌙';
+        } else {
+            body.setAttribute('data-theme', 'dark');
+            icon.innerText = '🌞';
+        }
+    }
+
+    function addNote() {
+        const text = document.getElementById('note-text').value.trim();
+        if (!text) return;
+
+        const note = {
+            id: Date.now(),
+            content: text,
+            date: new Date().toLocaleString()
+        };
+
+        notes.unshift(note);
+        saveAndRender();
+        document.getElementById('note-text').value = '';
+        updateCount();
+        
+        // Haptic Feedback simulation
+        if (window.navigator.vibrate) window.navigator.vibrate(50);
+    }
+
+    function deleteNote(id) {
+        notes = notes.filter(n => n.id !== id);
+        saveAndRender();
+    }
+
+    function filterNotes() {
+        const query = document.getElementById('search').value.toLowerCase();
+        renderNotes(query);
+    }
+
+    function saveAndRender() {
+        localStorage.setItem('mamlu_notes', JSON.stringify(notes));
+        renderNotes();
+    }
+
+    function renderNotes(filter = "") {
+        const list = document.getElementById('notes-list');
+        list.innerHTML = '';
+
+        notes.filter(n => n.content.toLowerCase().includes(filter))
+             .forEach(note => {
+            const card = document.createElement('div');
+            card.className = 'note-card';
+            card.innerHTML = `
+                <button class="delete-btn" onclick="deleteNote(${note.id})">&times;</button>
+                <div>${note.content}</div>
+                <span class="timestamp">${note.date}</span>
+            `;
+            list.appendChild(card);
+        });
+    }
+
+    // Initial Load
+    renderNotes();
+</script>
+
+</body>
+</html>
