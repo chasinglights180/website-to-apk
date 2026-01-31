@@ -1,10 +1,34 @@
-- name: Prepare Offline Files
+name: Build APK
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Prepare Offline Files
         run: |
+          # Creates the secret folder inside the app where HTML lives
           mkdir -p app/src/main/assets
           cp index.html app/src/main/assets/
-          # If you have CSS/JS files, copy them here too: cp style.css app/src/main/assets/
+          echo "HTML file moved to assets successfully"
 
       - name: Run Build Script
         run: |
           chmod +x make.sh
           ./make.sh build confs/webapk.conf
+
+      - name: Upload Final APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mamlu-Offline-App
+          path: ./*.apk
